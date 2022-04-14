@@ -17,9 +17,12 @@ def get_meta_dict():
     df = pd.read_csv(MATRICES_PATH)
     for i in range(len(df)):
         matrix_id = int(df.ProblemId[i])
+        if (df.conv0[i] == 0 and df.conv1[i] == 0):
+            continue
         matrix = ssgetpy.search(matrix_id)[0]
         file_path = matrix.download(extract=True)
         meta_dict[matrix_id] = {
+            "id": matrix_id, # or df.ProblemId[i],
             "path": file_path[0] + "/" + matrix.name + ".mtx",
             "rows": matrix.rows,
             "cols": matrix.cols,
@@ -60,7 +63,6 @@ def get_feature_df():
             continue
         print(f'reading matrix {meta["path"]}')
         mtx = mmread(meta["path"])
-        feature_dict[key]["id"] = key
         density = mtx.getnnz() / (mtx.shape[0] * mtx.shape[1])
         feature_dict[key]["density"] = density
         feature_dict[key]["avg_nnz"] = mtx.getnnz() / mtx.shape[0]
