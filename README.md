@@ -6,4 +6,4 @@ My thesis project
 `make_dataset.py` creates the file `data/dataset.csv` with features for matrices from `data/matrices.csv`.
 
 ### Train neural network
-`train.py` train neural network on dataset `data/dataset.csv`. There are several datasets with different amount of lines in the directory `data/`
+`nn_training/train.py` train neural network on dataset `data/dataset.csv`. There are several datasets with different amount of lines in the directory `data/`
