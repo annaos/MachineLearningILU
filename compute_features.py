@@ -5,19 +5,20 @@ import numpy as np
 import json
 import more_itertools as mit
 from collections import defaultdict
-
-DATA_PATH = './data/'
-MATRICES_PATH = DATA_PATH + 'matrices.csv'
-DATASET_PATH = DATA_PATH + 'dataset.csv'
-META_PATH = DATA_PATH + 'matrices_meta.json'
+import data_files
+import os
 
 
-def get_meta_dict():
+def get_meta_dict(df):
+    exist_df = os.path.exists(data_files.DATASET_PATH)
+    if exist_df:
+        existed_df = pd.read_csv(data_files.DATASET_PATH)
     meta_dict = dict()
-    df = pd.read_csv(MATRICES_PATH)
     for i in range(len(df)):
         matrix_id = int(df.ProblemId[i])
         if (df.conv0[i] == 0 and df.conv1[i] == 0):
+            continue
+        if (exist_df and matrix_id in existed_df.ProblemId.unique()):
             continue
         matrix = ssgetpy.search(matrix_id)[0]
         file_path = matrix.download(extract=True)
@@ -31,10 +32,6 @@ def get_meta_dict():
             "nsym": matrix.nsym,
             "psym": matrix.psym,
         }
-
-    with open(META_PATH, 'w') as outfile:
-        json.dump(meta_dict, outfile, indent=4, sort_keys=True)
-        print("Saved collected metas into " + META_PATH)
 
     return meta_dict
 
@@ -56,8 +53,8 @@ def chunks_per_row(mtx):
     return np.array(chunks), np.array(chunksizes)
 
 
-def get_feature_df():
-    feature_dict = get_meta_dict()
+def get_feature_df(label_df):
+    feature_dict = get_meta_dict(label_df)
     for key, meta in feature_dict.items():
         if meta["nonzeros"] > 10000000:
             continue
