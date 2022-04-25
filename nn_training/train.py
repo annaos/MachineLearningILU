@@ -5,12 +5,9 @@ import torch.nn.functional as F
 from matplotlib import pyplot as plt
 import pandas as pd
 from dataset import MatrixDataset
+import data_files
 
-DATA_PATH = '../data/'
-DATASET_PATH = DATA_PATH + 'dataset.csv'
-MODEL_PATH = DATA_PATH + 'model_net.pth'
-
-df = pd.read_csv(DATASET_PATH).dropna()
+df = pd.read_csv(data_files.DATASET_PATH).dropna()
 train_df = df.sample(frac=0.8)
 test_df = df.drop(train_df.index)
 print("train len: ", len(train_df))
@@ -31,55 +28,38 @@ val_loader = torch.utils.data.DataLoader(test_set, batch_size=batch_size,
 device = "cuda" if torch.cuda.is_available() else "cpu"
 print(f"Using {device} device")
 
-# model = nn.Sequential(
-#     nn.BatchNorm1d(6),
-#
-#     nn.Linear(6, 447),
-#     nn.ReLU(),
-# #    nn.BatchNorm1d(?),
-#
-#     nn.Linear(447, 1324),
-#     nn.ReLU(),
-# #    nn.BatchNorm1d(?),
-#
-#     nn.Linear(1324, 2),
-#     nn.Softmax(dim=1)
-# ).to(device)
-
 class Net(nn.Module):
     def __init__(self):
         super().__init__()
         self.bn = nn.BatchNorm1d(6)
-        self.fc1 = nn.Linear(6, 447)
-        self.fc2 = nn.Linear(447, 1324)
-        self.fc3 = nn.Linear(1324, 2)
-        self.sm = nn.Softmax(dim=1)
+        self.fc1 = nn.Linear(6, 14)
+        self.fc2 = nn.Linear(14, 1)
+        self.sm = nn.Softmax(dim=0)
 
     def forward(self, x):
         x = self.bn(x)
         x = F.relu(self.fc1(x))
         x = F.relu(self.fc2(x))
-        x = F.relu(self.fc3(x))
-   #     x = self.sm(x)
+        x = self.sm(x)
         return x
 
 model = Net()
 
 model.double()
-optimizer = optim.Adam(model.parameters(), lr=0.01386)
-criterion = nn.CrossEntropyLoss()
-
-#optimizer = torch.optim.SGD(model.parameters(), lr=0.01, momentum=0.8)
-#criterion = nn.NLLLoss()
+optimizer = optim.Adam(model.parameters(), lr=0.1)
+criterion = nn.BCELoss()
 
 def train(model, train_loader, num_epoch):
     loss_values = []
 
     for epoch in range(num_epoch):  # loop over the dataset multiple times
+    #    print('--------Epoch: ', epoch)
 
         running_loss = 0.0
         for i, data in enumerate(train_loader, 0):
             inputs, labels = data
+            labels = labels.unsqueeze(1)
+            labels = labels.double()
 
             optimizer.zero_grad()
 
@@ -89,6 +69,7 @@ def train(model, train_loader, num_epoch):
             optimizer.step()
 
             running_loss += loss.item()
+        print(f'[{epoch + 1}, {i + 1:5d}] loss: {running_loss:.10f}')
         loss_values.append(running_loss)
        # loss_values.append(running_loss / len(train_set))
 
@@ -108,7 +89,7 @@ def test(model, val_loader):
     print('Predicted: ', ' '.join(f'{predicted[j]}' for j in range(len(predicted))))
 
 
-model = train(model, train_loader, 500)
-torch.save(model.state_dict(), MODEL_PATH)
+model = train(model, train_loader, 20)
+torch.save(model.state_dict(), data_files.MODEL_PATH)
 
 test(model, val_loader)

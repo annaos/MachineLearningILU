@@ -56,7 +56,7 @@ def chunks_per_row(mtx):
 def get_feature_df(label_df):
     feature_dict = get_meta_dict(label_df)
     for key, meta in feature_dict.items():
-        if meta["nonzeros"] > 10000000:
+        if meta["nonzeros"] > 10000000: #TODO
             continue
         print(f'reading matrix {meta["path"]}')
         mtx = mmread(meta["path"])
