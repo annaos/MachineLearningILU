@@ -64,6 +64,8 @@ def train(model, train_loader, num_epoch):
             optimizer.zero_grad()
 
             outputs = model(inputs)
+            #print('Outputs: ', ' '.join(f'{outputs[j]}' for j in range(len(outputs))))
+
             loss = criterion(outputs, labels)
             loss.backward()
             optimizer.step()
@@ -85,7 +87,7 @@ def test(model, val_loader):
     print('GroundTruth: ', ' '.join(f'{labels[j]}' for j in range(len(labels))))
 
     outputs = model(matrix_data)
-    _, predicted = torch.max(outputs, 1)
+    predicted = torch.squeeze(outputs.round().to(torch.int))
     print('Predicted: ', ' '.join(f'{predicted[j]}' for j in range(len(predicted))))
 
 
