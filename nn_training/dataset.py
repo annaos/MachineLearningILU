@@ -1,6 +1,5 @@
 import numpy as np
 import torch
-from torchvision.transforms import transforms
 
 
 class MatrixDataset(torch.utils.data.Dataset):
@@ -22,13 +21,11 @@ class MatrixDataset(torch.utils.data.Dataset):
                          features.avg_row_block_count, features.std_row_block_count, features.min_row_block_count, features.max_row_block_count,
                          features.avg_row_block_size, features.std_row_block_size, features.min_row_block_size, features.max_row_block_size,
                          features.block_count])
-        if self.reduced_degree == 3:
-            return reduced, isEffective
-        return full, isEffective
+        if self.reduced_degree == 0:
+            return full, isEffective
+        return reduced, isEffective
 
     def get_amount_features(self):
-        if self.reduced_degree == 3:
-            return 6
         if self.reduced_degree == 0:
             return 18
-        return 18
+        return 6
