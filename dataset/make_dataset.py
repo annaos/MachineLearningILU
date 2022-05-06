@@ -20,3 +20,10 @@ print("merged dfs")
 
 dataset.to_csv(data_files.DATASET_PATH, index=False)
 print("saved dataset")
+
+df = pd.read_csv(data_files.DATASET_PATH).dropna()
+train_df = df.sample(frac=0.8)
+val_df = df.drop(train_df.index)
+print("train len: ", len(train_df))
+print("val len: ", len(val_df))
+val_df.to_csv(data_files.TESTSET_PATH, index=False)
