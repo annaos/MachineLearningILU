@@ -6,35 +6,49 @@ from net import Net
 DATA_PATH = '../data/'
 TESTSET_PATH = DATA_PATH + 'test_set.csv'
 reduced_feature = 0
-MODEL_PATH = "../models/model_net.pth"
+MODEL_PATH = "../models/model_net.pt"
 
 def get_report():
     for features, labels in val_loader:
         features = features.to(device)
 
         predictions = torch.squeeze(model(features.to(device)).round().to(torch.int))
-        error = 0
         prediction_effective = 0
         label_effective = 0
-        error_prediction_effective = 0
-        error_label_effective = 0
+        true_pos, true_neg, false_pos, false_neg = 0, 0, 0, 0
         for i, (pred, l) in enumerate(zip(predictions, labels)):
-            if pred == 1:
-                label_effective += 1
             if l == 1:
-                prediction_effective += 1
-            if pred != l:
-                error += 1
-                if l == 1:
-                    error_label_effective += 1
-                elif pred == 1:
-                    error_prediction_effective += 1
+                label_effective += 1
+                if pred == 1:
+                    prediction_effective += 1
+                    true_pos += 1
+                if pred == 0:
+                    false_neg += 1
+            if l == 0:
+                if pred == 1:
+                    prediction_effective += 1
+                    false_pos += 1
+                if pred == 0:
+                    true_neg += 1
+
+        accuracy = 100 * (true_pos + true_neg)/ len(labels)
+        if true_pos != 0:
+            precision = true_pos / (true_pos + false_pos)
+            recall = true_pos / (true_pos + false_neg)
+            f_one = 2 * precision * recall / (precision + recall)
+        else:
+            precision, recall, f_one = 0, 0, 0
+
         print('Test set: ', len(labels))
-        print('Predicted effective: ', prediction_effective)
         print('Label effective: ', label_effective)
-        print('Errors: ', error)
-        print('Error, where predicted effective: ', error_prediction_effective)
-        print('Error, where label effective: ', error_label_effective)
+        print('Predicted effective: ', prediction_effective)
+        print('Errors: ', false_neg + false_pos)
+        print('Error, where predicted effective (false positive): ', false_pos)
+        print('Error, where label effective (false negative): ', false_neg)
+        print('Accuracy: ', accuracy)
+        print('Precision: ', precision)
+        print('Recall: ', recall)
+        print('F_one: ', f_one)
 
 def get_results():
     for i, data in enumerate(val_loader, 0):
