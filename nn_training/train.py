@@ -7,6 +7,7 @@ import pandas as pd
 from dataset import MatrixDataset
 from datetime import datetime
 from net import Net
+import time
 
 DATA_PATH = '../data/'
 TRAINSET_PATH = DATA_PATH + 'train_set.csv'
@@ -47,6 +48,7 @@ def train():
     train_accuracy = []
     val_loss = []
 
+    start = time.time()
     for epoch in range(epochs):
     #    print('--------Epoch: ', epoch)
         running_train_loss, running_train_accuracy = train_one_epoch()
@@ -56,22 +58,23 @@ def train():
         running_val_loss = validation()
         val_loss.append(running_val_loss)
         scheduler.step()
-
-        if epoch % (epochs/10) == 0:
+        if epoch % (epochs/50) == 0:
             print(f'[{epoch + 1}] loss: {running_train_loss:.10f}, val_loss: {running_val_loss:.10f}, '
-                  f'accuracy: {running_train_accuracy:.2f}, learning rate: {scheduler.get_last_lr()[0]:.5f}')
-    print('Finished Training')
+                  f'accuracy: {running_train_accuracy:.2f}, learning rate: {scheduler.get_last_lr()[0]:.4e}')
+    end = time.time()
+    print(f'Finished Training in {(end - start) // 60} minutes')
 
     fig, axs = plt.subplots(2, 1)
     axs[0].plot(train_loss, label='train')
     axs[0].plot(val_loss, label='valid')
     axs[0].legend()
     axs[0].set_xlabel('epochs')
+    axs[1].set_ylabel('loss')
 
     axs[1].plot(train_accuracy, label='accuracy')
     axs[1].legend()
     axs[1].set_xlabel('epochs')
-    axs[1].set_ylabel('procent')
+    axs[1].set_ylabel('percent')
 
     fig.tight_layout()
     plt.show()
@@ -80,7 +83,7 @@ def train():
 
 def train_one_epoch():
     running_loss = 0.0
-    correct=0
+    correct = 0
     model.train(True)
     for inputs, labels in train_loader:
         optimizer.zero_grad()
@@ -89,8 +92,7 @@ def train_one_epoch():
         loss = criterion(outputs, labels.unsqueeze(1).double().to(device))
         loss.backward()
         optimizer.step()
-        temp = (outputs.round().to(torch.int) == labels.unsqueeze(1))
-        correct += temp.float().sum()
+        correct += (outputs.round().to(torch.int) == labels.unsqueeze(1).to(device)).sum().item()
         running_loss += loss.item()
     accuracy = 100 * correct / len(train_df)
     return running_loss / len(train_loader), accuracy
