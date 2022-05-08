@@ -8,6 +8,7 @@ from dataset import MatrixDataset
 from datetime import datetime
 from net import Net
 import time
+import math
 
 DATA_PATH = '../data/'
 TRAINSET_PATH = DATA_PATH + 'train_set.csv'
@@ -18,7 +19,7 @@ VAL_LOSS_PLOT_PATH = DATA_PATH + 'val_loss_plot.png'
 reduced_feature = 0
 batch_size = 32
 epochs = 500
-learning_rate = 100
+learning_rate = 1000
 
 df = pd.read_csv(TRAINSET_PATH).dropna()
 train_df = df.sample(frac=0.9)
@@ -40,7 +41,7 @@ if torch.cuda.is_available():
 model = Net(train_set.get_amount_features()).to(device)
 model.double()
 optimizer = optim.Adam(model.parameters(), lr=learning_rate)
-scheduler = scheduler.ExponentialLR(optimizer, gamma=0.9)
+scheduler = scheduler.StepLR(optimizer, step_size=5, gamma=0.9)
 criterion = nn.BCELoss()
 
 def train():
@@ -58,7 +59,7 @@ def train():
         running_val_loss = validation()
         val_loss.append(running_val_loss)
         scheduler.step()
-        if epoch % (epochs/50) == 0:
+        if epoch % math.ceil(epochs/50) == 0:
             print(f'[{epoch + 1}] loss: {running_train_loss:.10f}, val_loss: {running_val_loss:.10f}, '
                   f'accuracy: {running_train_accuracy:.2f}, learning rate: {scheduler.get_last_lr()[0]:.4e}')
     end = time.time()
@@ -69,12 +70,13 @@ def train():
     axs[0].plot(val_loss, label='valid')
     axs[0].legend()
     axs[0].set_xlabel('epochs')
-    axs[1].set_ylabel('loss')
+    axs[0].set_ylabel('loss')
 
     axs[1].plot(train_accuracy, label='accuracy')
     axs[1].legend()
     axs[1].set_xlabel('epochs')
     axs[1].set_ylabel('percent')
+   # axs[1].set_ylim([0, 100])
 
     fig.tight_layout()
     plt.show()
