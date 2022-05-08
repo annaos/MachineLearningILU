@@ -2,13 +2,12 @@ import torch.nn as nn
 import torch.optim as optim
 import torch.optim.lr_scheduler as scheduler
 import torch
-from matplotlib import pyplot as plt
 import pandas as pd
-from dataset import MatrixDataset
+from matplotlib import pyplot as plt
 from datetime import datetime
-from net import Net
-import time
 import math
+from dataset import MatrixDataset
+from net import Net
 
 DATA_PATH = '../data/'
 TRAINSET_PATH = DATA_PATH + 'train_set.csv'
@@ -44,14 +43,14 @@ optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 scheduler = scheduler.StepLR(optimizer, step_size=5, gamma=0.9)
 criterion = nn.BCELoss()
 
+
 def train():
     train_loss = []
     train_accuracy = []
     val_loss = []
 
-    start = time.time()
+    start = datetime.now()
     for epoch in range(epochs):
-    #    print('--------Epoch: ', epoch)
         running_train_loss, running_train_accuracy = train_one_epoch()
         train_accuracy.append(running_train_accuracy)
         train_loss.append(running_train_loss)
@@ -62,26 +61,11 @@ def train():
         if epoch % math.ceil(epochs/50) == 0:
             print(f'[{epoch + 1}] loss: {running_train_loss:.10f}, val_loss: {running_val_loss:.10f}, '
                   f'accuracy: {running_train_accuracy:.2f}, learning rate: {scheduler.get_last_lr()[0]:.4e}')
-    end = time.time()
-    print(f'Finished Training in {(end - start) // 60} minutes')
-
-    fig, axs = plt.subplots(2, 1)
-    axs[0].plot(train_loss, label='train')
-    axs[0].plot(val_loss, label='valid')
-    axs[0].legend()
-    axs[0].set_xlabel('epochs')
-    axs[0].set_ylabel('loss')
-
-    axs[1].plot(train_accuracy, label='accuracy')
-    axs[1].legend()
-    axs[1].set_xlabel('epochs')
-    axs[1].set_ylabel('percent')
-   # axs[1].set_ylim([0, 100])
-
-    fig.tight_layout()
-    plt.show()
-    plt.savefig(LOSS_PLOT_PATH)
+    end = datetime.now()
+    print(f'Finished Training in {(end - start).seconds // 60} minutes')
+    create_plot(train_loss, val_loss, train_accuracy)
     return model
+
 
 def train_one_epoch():
     running_loss = 0.0
@@ -108,6 +92,25 @@ def validation():
         loss = criterion(outputs, labels.unsqueeze(1).double().to(device))
         val_loss += loss.item()
     return val_loss / len(val_loader)
+
+
+def create_plot(train_loss, val_loss, train_accuracy):
+    fig, axs = plt.subplots(2, 1)
+    axs[0].plot(train_loss, label='train')
+    axs[0].plot(val_loss, label='valid')
+    axs[0].legend()
+    axs[0].set_xlabel('epochs')
+    axs[0].set_ylabel('loss')
+
+    axs[1].plot(train_accuracy, label='accuracy')
+    axs[1].legend()
+    axs[1].set_xlabel('epochs')
+    axs[1].set_ylabel('percent')
+    # axs[1].set_ylim([0, 100])
+
+    fig.tight_layout()
+    plt.show()
+    plt.savefig(LOSS_PLOT_PATH)
 
 
 model = train()
