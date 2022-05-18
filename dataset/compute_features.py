@@ -2,7 +2,6 @@ import ssgetpy
 from scipy.io import mmread
 import pandas as pd
 import numpy as np
-import json
 import more_itertools as mit
 from collections import defaultdict
 import data_files
@@ -18,7 +17,7 @@ def get_meta_dict(df):
         matrix_id = int(df.ProblemId[i])
         if (df.conv0[i] == 0 and df.conv1[i] == 0):
             continue
-        if (exist_df and matrix_id in existed_df.ProblemId.unique()):
+        if (exist_df and matrix_id in existed_df.id.unique()):
             continue
         matrix = ssgetpy.search(matrix_id)[0]
         file_path = matrix.download(extract=True)
@@ -56,8 +55,6 @@ def chunks_per_row(mtx):
 def get_feature_df(label_df):
     feature_dict = get_meta_dict(label_df)
     for key, meta in feature_dict.items():
-        if meta["nonzeros"] > 10000000: #TODO
-            continue
         print(f'reading matrix {meta["path"]}')
         mtx = mmread(meta["path"])
         density = mtx.getnnz() / (mtx.shape[0] * mtx.shape[1])

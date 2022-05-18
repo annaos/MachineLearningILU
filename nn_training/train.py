@@ -18,7 +18,7 @@ VAL_LOSS_PLOT_PATH = DATA_PATH + 'val_loss_plot.png'
 reduced_feature = 0
 batch_size = 32
 epochs = 500
-learning_rate = 1000
+learning_rate = 0.01
 
 df = pd.read_csv(TRAINSET_PATH).dropna()
 train_df = df.sample(frac=0.9)
@@ -29,7 +29,7 @@ train_set = MatrixDataset(train_df, reduced_feature)
 val_set = MatrixDataset(val_df, reduced_feature)
 
 train_loader = torch.utils.data.DataLoader(train_set, batch_size=batch_size, shuffle=True, pin_memory=True)
-val_loader = torch.utils.data.DataLoader(val_set, batch_size=batch_size//8, shuffle=True, pin_memory=True)
+val_loader = torch.utils.data.DataLoader(val_set, batch_size=batch_size, shuffle=True, pin_memory=True)
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f"Using {device} device")
@@ -57,10 +57,13 @@ def train():
 
         running_val_loss = validation()
         val_loss.append(running_val_loss)
-        scheduler.step()
+
         if epoch % math.ceil(epochs/50) == 0:
             print(f'[{epoch + 1}] loss: {running_train_loss:.10f}, val_loss: {running_val_loss:.10f}, '
                   f'accuracy: {running_train_accuracy:.2f}, learning rate: {scheduler.get_last_lr()[0]:.4e}')
+
+        scheduler.step()
+
     end = datetime.now()
     print(f'Finished Training in {(end - start).seconds // 60} minutes')
     create_plot(train_loss, val_loss, train_accuracy)

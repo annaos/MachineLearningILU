@@ -12,7 +12,7 @@ class MatrixDataset(torch.utils.data.Dataset):
 
     def __getitem__(self, index):
         sample = self.data_df.iloc[index]
-        features = sample[10:]
+        features = sample[9:]
         isEffective = sample.isEffective
 
         reduced = np.array([features.density,  features.nonzeros, features.nsym, features.posdef, features.psym, features.rows])

@@ -6,24 +6,21 @@ import torch.nn.functional as F
 class Net(nn.Module):
     def __init__(self, amount_features):
         super().__init__()
-        self.bn = nn.BatchNorm1d(amount_features)
         self.fc0 = nn.Linear(amount_features, 32)
         self.fc1 = nn.Linear(32, 128)
-        self.fc2 = nn.Linear(128, 1024)
-        self.fc3 = nn.Linear(1024, 1)
-        self.sm = nn.Softmax(dim=0)
+        self.fc2 = nn.Linear(128, 1)
+
+        self.activation = nn.Tanh()
+        self.sigmoid = nn.Sigmoid()
+
 
     def forward(self, x):
-        x = self.bn(x)
-        x = F.relu(self.fc0(x))
-        x = F.dropout(x, 0.2)
+        x = self.fc0(x)
+        x = self.activation(x)
 
-        x = F.relu(self.fc1(x))
-        x = F.dropout(x, 0.3)
+        x = self.fc1(x)
+        x = self.activation(x)
 
-        x = F.relu(self.fc2(x))
-        x = F.dropout(x, 0.4)
-
-        x = self.fc3(x)
-        x = self.sm(x)
+        x = self.fc2(x)
+        x = self.sigmoid(x)
         return x
