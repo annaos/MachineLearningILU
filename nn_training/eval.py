@@ -7,7 +7,7 @@ import numpy as np
 DATA_PATH = '../data/'
 TESTSET_PATH = DATA_PATH + 'test_set.csv'
 reduced_feature = 0
-MODEL_PATH = "../models/model_net_1.pt"
+MODEL_PATH = "../models/model_net.pt"
 
 def get_report():
     for features, labels in val_loader:
@@ -58,7 +58,7 @@ def get_report():
 def get_results():
     for i, data in enumerate(val_loader, 0):
         features, labels = data
-        print('GroundTruth: ', ' '.join(f'{labels[j]}' for j in range(len(labels))))
+        print('GroundTruth: ', ' '.join(f'{int(labels[j])}' for j in range(len(labels))))
 
         predicted = torch.squeeze(model(features.to(device)).round().to(torch.int))
         print('Predicted  : ', ' '.join(f'{predicted[j]}' for j in range(len(predicted))))
@@ -67,7 +67,7 @@ test_df = pd.read_csv(TESTSET_PATH)
 test_set = MatrixDataset(test_df, reduced_feature)
 val_loader = torch.utils.data.DataLoader(test_set, batch_size=len(test_set),
                                          shuffle=False, pin_memory=True)
-device = torch.device("cuda:2" if torch.cuda.is_available() else "cpu")
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 model = Net(test_set.get_amount_features()).to(device)
 model.double()
@@ -75,5 +75,5 @@ model.double()
 model.load_state_dict(torch.load(MODEL_PATH, map_location=device))
 model.eval()
 
-get_results()
+#get_results()
 get_report()

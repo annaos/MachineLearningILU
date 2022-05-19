@@ -13,7 +13,6 @@ DATA_PATH = '../data/'
 TRAINSET_PATH = DATA_PATH + 'train_set.csv'
 LOSS_PLOT_PATH = DATA_PATH + 'loss_plot.png'
 TRAIN_LOSS_PLOT_PATH = DATA_PATH + 'train_loss_plot.png'
-VAL_LOSS_PLOT_PATH = DATA_PATH + 'val_loss_plot.png'
 
 reduced_feature = 0
 batch_size = 32
@@ -25,6 +24,8 @@ train_df = df.sample(frac=0.9)
 val_df = df.drop(train_df.index)
 print("train len: ", len(train_df))
 print("val len: ", len(val_df))
+print("batch_size: ", batch_size)
+
 train_set = MatrixDataset(train_df, reduced_feature)
 val_set = MatrixDataset(val_df, reduced_feature)
 
@@ -42,7 +43,7 @@ model.double()
 optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 scheduler = scheduler.StepLR(optimizer, step_size=5, gamma=0.9)
 criterion = nn.BCELoss()
-
+print(model)
 
 def train():
     train_loss = []
@@ -117,6 +118,7 @@ def create_plot(train_loss, val_loss, train_accuracy):
 
 
 model = train()
-ts = int(datetime.timestamp(datetime.now()))
-torch.save(model.state_dict(), f"../models/model_{ts}_{epochs}_{len(train_df)}.pt")
+model_name = '../models/model_net.pt' # f"../models/model_{int(datetime.timestamp(datetime.now()))}_{epochs}_{len(train_df)}.pt"
+torch.save(model.state_dict(), model_name)
 
+import eval
