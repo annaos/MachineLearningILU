@@ -2,11 +2,12 @@ import pandas as pd
 from dataset import MatrixDataset
 import torch
 from net import Net
+import numpy as np
 
 DATA_PATH = '../data/'
 TESTSET_PATH = DATA_PATH + 'test_set.csv'
 reduced_feature = 0
-MODEL_PATH = "../models/model_net.pt"
+MODEL_PATH = "../models/model_net_1.pt"
 
 def get_report():
     for features, labels in val_loader:
@@ -39,10 +40,14 @@ def get_report():
         else:
             precision, recall, f_one = 0, 0, 0
 
+        confusion_matrix = [[true_pos, false_neg], [false_pos, true_neg]]
         print('Test set: ', len(labels))
         print('Label effective: ', label_effective)
         print('Predicted effective: ', prediction_effective)
         print('Errors: ', false_neg + false_pos)
+        print('Confusion matrix:')
+        print(np.matrix(confusion_matrix))
+
         print('Error, where predicted effective (false positive): ', false_pos)
         print('Error, where label effective (false negative): ', false_neg)
         print('Accuracy: ', accuracy)
