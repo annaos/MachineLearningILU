@@ -10,46 +10,37 @@ reduced_feature = 0
 MODEL_PATH = "../models/model_net.pt"
 
 def get_report():
-    for features, labels in val_loader:
-        features = features.to(device)
+    for features, truth in val_loader:
+        prediction = torch.squeeze(model(features.to(device)).round().to(torch.int))
 
-        predictions = torch.squeeze(model(features.to(device)).round().to(torch.int))
-        prediction_effective = 0
-        label_effective = 0
-        true_pos, true_neg, false_pos, false_neg = 0, 0, 0, 0
-        for i, (pred, l) in enumerate(zip(predictions, labels)):
-            if l == 1:
-                label_effective += 1
-                if pred == 1:
-                    prediction_effective += 1
-                    true_pos += 1
-                if pred == 0:
-                    false_neg += 1
-            if l == 0:
-                if pred == 1:
-                    prediction_effective += 1
-                    false_pos += 1
-                if pred == 0:
-                    true_neg += 1
+        prediction_effective = prediction.sum().item()
+        label_effective = truth.unsqueeze(1).to(device).sum().item()
 
-        accuracy = 100 * (true_pos + true_neg)/ len(labels)
-        if true_pos != 0:
-            precision = true_pos / (true_pos + false_pos)
-            recall = true_pos / (true_pos + false_neg)
+        confusion_vector = prediction / truth.to(device)
+        true_positives = torch.sum(confusion_vector == 1).item()
+        false_positives = torch.sum(confusion_vector == float('inf')).item()
+        true_negatives = torch.sum(torch.isnan(confusion_vector)).item()
+        false_negatives = torch.sum(confusion_vector == 0).item()
+
+
+        accuracy = 100 * (true_positives + true_negatives)/ len(truth)
+        if true_positives != 0:
+            precision = true_positives / (true_positives + false_positives)
+            recall = true_positives / (true_positives + false_negatives)
             f_one = 2 * precision * recall / (precision + recall)
         else:
             precision, recall, f_one = 0, 0, 0
 
-        confusion_matrix = [[true_pos, false_neg], [false_pos, true_neg]]
-        print('Test set: ', len(labels))
+        confusion_matrix = [[true_positives, false_negatives], [false_positives, true_negatives]]
+        print('Test set: ', len(truth))
         print('Label effective: ', label_effective)
         print('Predicted effective: ', prediction_effective)
-        print('Errors: ', false_neg + false_pos)
+        print('Errors: ', false_negatives + false_positives)
         print('Confusion matrix:')
         print(np.matrix(confusion_matrix))
 
-        print('Error, where predicted effective (false positive): ', false_pos)
-        print('Error, where label effective (false negative): ', false_neg)
+        print('Error, where predicted effective (false positive): ', false_positives)
+        print('Error, where label effective (false negative): ', false_negatives)
         print('Accuracy: ', accuracy)
         print('Precision: ', precision)
         print('Recall: ', recall)
