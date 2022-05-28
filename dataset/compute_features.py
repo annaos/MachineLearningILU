@@ -71,7 +71,18 @@ def read_matrix(path, size, split):
 
 
 def p_n_symmetry(mtx):
-    return 1, 1 #TODO
+    size = mtx.shape
+    mtx.setdiag(0)
+    nzoffdiag = mtx.count_nonzero()
+    a_csr = mtx.tocsr()
+    a_t_csr = a_csr.transpose()
+    p_sym = a_csr.multiply(a_t_csr).count_nonzero() / nzoffdiag
+
+    n_sym = size[0] * size[1] - (a_csr - a_t_csr).count_nonzero()
+    double_zero = size[0] * size[1] - (a_csr.multiply(a_csr) + a_t_csr.multiply(a_t_csr)).count_nonzero()
+    n_sym = (n_sym - double_zero) / nzoffdiag
+
+    return p_sym, n_sym
 
 
 def get_feature_df(label_df):
@@ -83,7 +94,9 @@ def get_feature_df(label_df):
             feature_dict[key]["rows"] = mtx.shape[0]
             feature_dict[key]["cols"] = mtx.shape[1]
             feature_dict[key]["nonzeros"] = mtx.getnnz()
-            feature_dict[key]["psym"], feature_dict[key]["nsym"] = p_n_symmetry(mtx)
+            if meta["nsym"] != 1:
+                psym, feature_dict[key]["nsym"] = p_n_symmetry(mtx)
+                feature_dict[key]["psym"] = max(meta["psym"], psym)
 
         feature_dict[key]["density"] = mtx.getnnz() / (mtx.shape[0] * mtx.shape[1])
         feature_dict[key]["avg_nnz"] = mtx.getnnz() / mtx.shape[0]
