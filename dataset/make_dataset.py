@@ -12,8 +12,8 @@ if feature_df.size == 0:
     exit()
 print("got feature df")
 
-dataset = label_df.merge(feature_df, left_on="ProblemId", right_on="id")
-dataset.drop('ProblemId', inplace=True, axis=1)
+dataset = label_df.merge(feature_df, left_on="ProblemId", right_on="problem_id")
+dataset.drop('problem_id', inplace=True, axis=1)
 if os.path.exists(data_files.DATASET_PATH):
     existed_df = pd.read_csv(data_files.DATASET_PATH)
     dataset = pd.concat([dataset, existed_df])

@@ -3,21 +3,18 @@ import data_files
 
 def normalize(df):
     df = df.dropna().replace([True], 1).replace([False], 0)
-    for feature_name in df.columns:
-        if feature_name == "ProblemId":
-            continue
-        if feature_name == "ProblemName":
-            continue
-        if feature_name == "id":
-            continue
-        if feature_name == "path":
-            continue
+    columns = ["rows", "nonzeros", "avg_nnz", "max_nnz", "std_nnz",
+               "avg_row_block_count", "std_row_block_count", "min_row_block_count", "max_row_block_count",
+               "avg_row_block_size", "std_row_block_size", "min_row_block_size", "max_row_block_size", "block_count"]
+    for feature_name in columns:
         max_value = df[feature_name].max()
         min_value = df[feature_name].min()
         df[feature_name] = (df[feature_name] - min_value) / (max_value - min_value)
     return df
 
 df = pd.read_csv(data_files.DATASET_PATH)
+df = df.sample(frac=0.1)
+
 normalized_df = normalize(df)
 
 train_df = normalized_df.sample(frac=0.8)
