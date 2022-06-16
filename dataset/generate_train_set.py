@@ -12,8 +12,26 @@ def normalize(df):
         df[feature_name] = (df[feature_name] - min_value) / (max_value - min_value)
     return df
 
+def ret_df_isEffective(table, part = None, n = 100):
+    qwt_out = n if part == None else int(round(len(table) * part))
+    qwt1 = qwt0 = int(round(qwt_out * 0.5))
+    table1 = table[table.isEffective == 1]
+    if len(table1) < qwt1:
+        print('Not enough 1')
+        qwt1 = len(table1)
+    table = table[table.isEffective == 0]
+    if len(table) < qwt0:
+        print('Not enough 0')
+        qwt0 = len(table)
+    print(f'Amount effective records: {qwt1}, not effective records: {qwt0}')
+    table1 = table1.sample(n=qwt1)
+    table = table.sample(n=qwt0)
+    table = table.append(table1)
+    table = table.sample(frac=1)
+    return table
+
 df = pd.read_csv(data_files.DATASET_PATH)
-df = df.sample(frac=0.1)
+df = ret_df_isEffective(df, n=5000)
 
 normalized_df = normalize(df)
 
