@@ -1,3 +1,4 @@
+import numpy as np
 import torch.nn as nn
 import torch.optim as optim
 import torch.optim.lr_scheduler as scheduler
@@ -8,23 +9,28 @@ from datetime import datetime
 import math
 from dataset import MatrixDataset
 from net import Net
+from early_stopping import EarlyStopping
 
 DATA_PATH = '../data/'
 TRAINSET_PATH = DATA_PATH + 'train_set.csv'
 LOSS_PLOT_PATH = DATA_PATH + 'loss_plot.png'
-TRAIN_LOSS_PLOT_PATH = DATA_PATH + 'train_loss_plot.png'
 
 reduced_feature = 0
-batch_size = 32
-epochs = 500
-learning_rate = 0.01
+batch_size = 4
+epochs = 1
+learning_rate = 1e-4
+#torch.manual_seed(42)
+#torch.cuda.manual_seed(42)
+#np.random.seed(42)
+early_stopping = EarlyStopping(patience=20)
 
 df = pd.read_csv(TRAINSET_PATH).dropna()
-train_df = df.sample(frac=0.9)
+train_df = df.sample(frac=0.8)
 val_df = df.drop(train_df.index)
 print("train len: ", len(train_df))
 print("val len: ", len(val_df))
 print("batch_size: ", batch_size)
+print(f'start learning rate: {learning_rate:.4e}')
 
 train_set = MatrixDataset(train_df, reduced_feature)
 val_set = MatrixDataset(val_df, reduced_feature)
@@ -41,7 +47,7 @@ if torch.cuda.is_available():
 model = Net(train_set.get_amount_features()).to(device)
 model.double()
 optimizer = optim.Adam(model.parameters(), lr=learning_rate)
-scheduler = scheduler.StepLR(optimizer, step_size=5, gamma=0.9)
+#scheduler = scheduler.StepLR(optimizer, step_size=5, gamma=0.9)
 criterion = nn.BCELoss()
 print(model)
 
@@ -61,13 +67,18 @@ def train():
         val_accuracy.append(running_val_accuracy)
         val_loss.append(running_val_loss)
 
-        if epoch % math.ceil(epochs/50) == 0:
+        if True or epoch % math.ceil(epochs/50) == 0:
             print(f'[{epoch + 1}] train_loss: {running_train_loss:.10f}, val_loss: {running_val_loss:.10f}, '
                   f'train_accuracy: {running_train_accuracy:.2f}, val_accuracy: {running_val_accuracy:.2f}, '
-                  f'train_f_one_: {f_one_train:.2f}, val_f_one: {f_one_validation:.2f}, '
-                  f', learning rate: {scheduler.get_last_lr()[0]:.4e}')
+                  f'train_f_one: {f_one_train:.2f}, val_f_one: {f_one_validation:.2f}, '
+                  #f'learning rate: {scheduler.get_last_lr()[0]:.4e}'
+                  )
 
-        scheduler.step()
+        #scheduler.step()
+        early_stopping(running_val_loss, model)
+        if early_stopping.early_stop:
+            print("Early stopping")
+            break
 
     end = datetime.now()
     print(f'Finished Training in {(end - start).seconds // 60} minutes')
@@ -77,7 +88,6 @@ def train():
 
 def train_one_epoch():
     running_loss = 0.0
-    correct = 0
     true_positives, false_positives, true_negatives, false_negatives = 0, 0, 0, 0
     model.train(True)
     for inputs, labels in train_loader:
@@ -134,6 +144,7 @@ def validation():
         f_one = 0
 
     return val_loss / len(val_loader), accuracy, f_one
+
 
 def create_plot(train_loss, val_loss, train_accuracy, val_accuracy):
     fig, axs = plt.subplots(2, 1)
