@@ -9,7 +9,8 @@ def normalize(df):
     for feature_name in columns:
         max_value = df[feature_name].max()
         min_value = df[feature_name].min()
-        df[feature_name] = (df[feature_name] - min_value) / (max_value - min_value)
+        if (max_value != min_value):
+            df[feature_name] = (df[feature_name] - min_value) / (max_value - min_value)
     return df
 
 def ret_df_isEffective(table, part = None, n = 100):
@@ -31,10 +32,9 @@ def ret_df_isEffective(table, part = None, n = 100):
     return table
 
 df = pd.read_csv(data_files.DATASET_PATH)
-df = ret_df_isEffective(df, n=5000)
+df = ret_df_isEffective(df, n=500*2)
 
 normalized_df = normalize(df)
-
 train_df = normalized_df.sample(frac=0.8)
 test_df = normalized_df.drop(train_df.index)
 
