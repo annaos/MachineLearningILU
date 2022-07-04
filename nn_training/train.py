@@ -22,7 +22,7 @@ learning_rate = 1e-4
 #torch.manual_seed(42)
 #torch.cuda.manual_seed(42)
 #np.random.seed(42)
-early_stopping = EarlyStopping(patience=20)
+early_stopping = EarlyStopping(patience=20, path='../models/model_net.pt')
 
 df = pd.read_csv(TRAINSET_PATH).dropna()
 train_df = df.sample(frac=0.8)
