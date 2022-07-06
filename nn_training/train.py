@@ -17,7 +17,7 @@ LOSS_PLOT_PATH = DATA_PATH + 'loss_plot.png'
 
 reduced_feature = 0
 batch_size = 4
-epochs = 1
+epochs = 10000
 learning_rate = 1e-4
 #torch.manual_seed(42)
 #torch.cuda.manual_seed(42)

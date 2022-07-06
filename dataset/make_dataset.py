@@ -4,25 +4,25 @@ from compute_features import ComputeFeatures
 from compute_features_random import ComputeFeaturesRandom
 import pandas as pd
 import data_files
-
-
-def extend(dataset):
-    if os.path.exists(data_files.DATASET_PATH):
-        existed_df = pd.read_csv(data_files.DATASET_PATH)
-        dataset = pd.concat([dataset, existed_df])
+from utils import Utils
 
 
 def main():
-    print("got")
     args = sys.argv[1:]
-    matrix_origin = args[0]
+    matrix_origin_type = args[0]
 
-    label_df = pd.read_csv(data_files.MATRICES_PATH)
+    df = pd.read_csv(data_files.MATRICES_PATH)
+
+    not_conv_df = df[df.conv0.eq(0) & df.conv1.eq(0)]
+    label_df = df.drop(not_conv_df.index)
+    label_df = Utils.update_is_effective(label_df, factor=1.5)
+    label_df = Utils.cut_df_by_is_effective(label_df, n=2000 * 2)
+
     print(f"got label df: {len(label_df)} entries")
 
-    if matrix_origin == 'ss':
+    if matrix_origin_type == 'ss':
         compute_features = ComputeFeatures()
-    elif matrix_origin == 'random':
+    elif matrix_origin_type == 'random':
         compute_features = ComputeFeaturesRandom()
 
     feature_df = compute_features.get_feature_df(label_df)

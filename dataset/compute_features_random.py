@@ -13,7 +13,7 @@ from dataset.compute_features import ComputeFeatures
 
 class ComputeFeaturesRandom(ComputeFeatures):
 
-    def read_matrix(counter):
+    def read_matrix(self, counter):
         mtx = mmread('../../matlab/random_matrices/' + str(counter) + '.m')
         return mtx
 
@@ -24,16 +24,17 @@ class ComputeFeaturesRandom(ComputeFeatures):
             counter = label_df.counter[i]
             if i % 100 == 0:
                 print(f'reading matrix {counter}')
-            mtx = ComputeFeaturesRandom.read_matrix(counter)
+            mtx = self.read_matrix(counter)
 
             feature_dict[counter] = dict()
             feature_dict[counter]["counter"] = counter
             feature_dict[counter]["rows"] = mtx.shape[0]
             feature_dict[counter]["cols"] = mtx.shape[1]
-            feature_dict[counter]["nonzeros"] = mtx.getnnz()
-            feature_dict[counter]["psym"], feature_dict[counter]["nsym"], feature_dict[counter]["posdef"] = ComputeFeaturesRandom.p_n_symmetry(mtx)
+            feature_dict[counter]["nonzeros"] = mtx.count_nonzero()
+            feature_dict[counter]["posdef"] = False
+            feature_dict[counter]["psym"], feature_dict[counter]["nsym"] = self.p_n_symmetry(mtx)
 
-            feature_dict[counter].update(ComputeFeaturesRandom.compute_common_features(mtx))
+            feature_dict[counter].update(self.compute_common_features(mtx))
 
         return pd.DataFrame(data=feature_dict).T
 

@@ -10,7 +10,7 @@ import os
 
 class ComputeFeatures:
 
-    def get_meta_dict(df):
+    def get_meta_dict(self, df):
         exist_df = os.path.exists(data_files.DATASET_PATH)
         if exist_df:
             existed_df = pd.read_csv(data_files.DATASET_PATH)
@@ -46,11 +46,11 @@ class ComputeFeatures:
         return meta_dict
 
 
-    def nnz_per_row(mtx):
+    def nnz_per_row(self, mtx):
         return np.unique(mtx.nonzero()[0], return_counts=True)[1]
 
 
-    def chunks_per_row(mtx):
+    def chunks_per_row(self, mtx):
         chunk_dict = defaultdict(list)
         for x, y in zip(mtx.row, mtx.col):
             chunk_dict[x].append(y)
@@ -62,7 +62,7 @@ class ComputeFeatures:
             chunks.append(len(groups))
         return np.array(chunks), np.array(chunksizes)
 
-    def read_matrix(path, size, split):
+    def read_matrix(self, path, size, split):
         mtx = mmread(path)
         if (size != None and split != None):
             start = int(split) - 1
@@ -71,10 +71,13 @@ class ComputeFeatures:
         return mtx
 
 
-    def p_n_symmetry(mtx):
+    def p_n_symmetry(self, input_matrix):
+        mtx = input_matrix.copy()
         size = mtx.shape
         mtx.setdiag(0)
         nzoffdiag = mtx.count_nonzero()
+        if nzoffdiag == 0:
+            return 1, 1
         a_csr = mtx.tocsr()
         a_t_csr = a_csr.transpose()
         p_sym = a_csr.multiply(a_t_csr).count_nonzero() / nzoffdiag
@@ -82,38 +85,38 @@ class ComputeFeatures:
         n_sym = size[0] * size[1] - (a_csr - a_t_csr).count_nonzero()
         double_zero = size[0] * size[1] - (a_csr.multiply(a_csr) + a_t_csr.multiply(a_t_csr)).count_nonzero()
         n_sym = (n_sym - double_zero) / nzoffdiag
-        if (n_sym == 1):
-            posdef = 1
-        else:
-            posdef = 0
 
-        return p_sym, n_sym, posdef
+        return p_sym, n_sym
 
 
     def get_feature_df(self, label_df):
-        feature_dict = ComputeFeatures.get_meta_dict(label_df)
+        feature_dict = self.get_meta_dict(label_df)
+        i = 1
         for key, meta in feature_dict.items():
-            print(f'reading matrix {meta["path"]}')
-            mtx = ComputeFeatures.read_matrix(meta["path"], meta["size"], meta["split"])
+            if i % 100 == 0:
+                print(f'reading matrix {i} {key} {meta["path"]}')
+            i += 1
+
+            mtx = self.read_matrix(meta["path"], meta["size"], meta["split"])
             if (meta["size"] != None and meta["split"] != None):
                 feature_dict[key]["rows"] = mtx.shape[0]
                 feature_dict[key]["cols"] = mtx.shape[1]
-                feature_dict[key]["nonzeros"] = mtx.getnnz()
+                feature_dict[key]["nonzeros"] = mtx.count_nonzero()
                 if meta["nsym"] != 1:
-                    psym, feature_dict[key]["nsym"] = ComputeFeatures.p_n_symmetry(mtx)
-                    feature_dict[key]["psym"] = max(meta["psym"], psym)
+                    psym, feature_dict[key]["nsym"] = self.p_n_symmetry(mtx)
+                    feature_dict[key]["psym"] = psym
 
-            feature_dict[key].update(ComputeFeatures.compute_common_features(mtx))
+            feature_dict[key].update(self.compute_common_features(mtx))
 
         return pd.DataFrame(data=feature_dict).T
 
-    def compute_common_features(mtx):
+    def compute_common_features(self, mtx):
         features = dict()
-        features["density"] = mtx.getnnz() / (mtx.shape[0] * mtx.shape[1])
-        features["avg_nnz"] = mtx.getnnz() / mtx.shape[0]
-        features["max_nnz"] = int(ComputeFeatures.nnz_per_row(mtx).max())
-        features["std_nnz"] = np.std(ComputeFeatures.nnz_per_row(mtx))
-        chunks,chunk_sizes = ComputeFeatures.chunks_per_row(mtx)
+        features["density"] = mtx.count_nonzero() / (mtx.shape[0] * mtx.shape[1])
+        features["avg_nnz"] = mtx.count_nonzero() / mtx.shape[0]
+        features["max_nnz"] = int(self.nnz_per_row(mtx).max())
+        features["std_nnz"] = np.std(self.nnz_per_row(mtx))
+        chunks,chunk_sizes = self.chunks_per_row(mtx)
         features["avg_row_block_count"] = np.mean(chunks)
         features["std_row_block_count"] = np.std(chunks)
         features["min_row_block_count"] = np.min(chunks)
