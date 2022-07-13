@@ -26,6 +26,7 @@ def main():
         compute_features = ComputeFeaturesRandom()
 
     feature_df = compute_features.get_feature_df(label_df)
+    Utils.generate_relative_features(feature_df)
     if feature_df.size == 0:
         print("feature df is empty")
         exit()
@@ -36,6 +37,7 @@ def main():
 
     dataset.to_csv(data_files.DATASET_PATH, index=False)
     print("saved dataset")
+
 
 if __name__ == "__main__":
     main()

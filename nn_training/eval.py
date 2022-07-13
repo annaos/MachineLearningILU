@@ -6,8 +6,9 @@ import numpy as np
 
 DATA_PATH = '../data/'
 TESTSET_PATH = DATA_PATH + 'test_set.csv'
-reduced_feature = 0
+feature_collection = 'relative'
 MODEL_PATH = "../models/model_net.pt"
+
 
 def get_report():
     for features, truth in val_loader:
@@ -22,8 +23,7 @@ def get_report():
         true_negatives = torch.sum(torch.isnan(confusion_vector)).item()
         false_negatives = torch.sum(confusion_vector == 0).item()
 
-
-        accuracy = 100 * (true_positives + true_negatives)/ len(truth)
+        accuracy = 100 * (true_positives + true_negatives) / len(truth)
         if true_positives != 0:
             precision = true_positives / (true_positives + false_positives)
             recall = true_positives / (true_positives + false_negatives)
@@ -46,6 +46,7 @@ def get_report():
         print('Recall: ', recall)
         print('F_one: ', f_one)
 
+
 def get_results():
     for i, data in enumerate(val_loader, 0):
         features, labels = data
@@ -54,10 +55,10 @@ def get_results():
         predicted = torch.squeeze(model(features.to(device)).round().to(torch.int))
         print('Predicted  : ', ' '.join(f'{predicted[j]}' for j in range(len(predicted))))
 
+
 test_df = pd.read_csv(TESTSET_PATH)
-test_set = MatrixDataset(test_df, reduced_feature)
-val_loader = torch.utils.data.DataLoader(test_set, batch_size=len(test_set),
-                                         shuffle=False, pin_memory=True)
+test_set = MatrixDataset(test_df, feature_collection)
+val_loader = torch.utils.data.DataLoader(test_set, batch_size=len(test_set), shuffle=False, pin_memory=True)
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 model = Net(test_set.get_amount_features()).to(device)
@@ -66,5 +67,5 @@ model.double()
 model.load_state_dict(torch.load(MODEL_PATH, map_location=device))
 model.eval()
 
-#get_results()
+# get_results()
 get_report()

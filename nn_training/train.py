@@ -14,15 +14,16 @@ from early_stopping import EarlyStopping
 DATA_PATH = '../data/'
 TRAINSET_PATH = DATA_PATH + 'train_set.csv'
 LOSS_PLOT_PATH = DATA_PATH + 'loss_plot.png'
+MODEL_PATH = '../models/model_net.pt'
 
-reduced_feature = 0
+feature_collection = 'relative'
 batch_size = 4
 epochs = 10000
 learning_rate = 1e-4
-#torch.manual_seed(42)
-#torch.cuda.manual_seed(42)
-#np.random.seed(42)
-early_stopping = EarlyStopping(patience=20, path='../models/model_net.pt')
+# torch.manual_seed(42)
+# torch.cuda.manual_seed(42)
+# np.random.seed(42)
+early_stopping = EarlyStopping(patience=20, path=MODEL_PATH, delta=0.1)
 
 df = pd.read_csv(TRAINSET_PATH).dropna()
 train_df = df.sample(frac=0.8)
@@ -32,8 +33,8 @@ print("val len: ", len(val_df))
 print("batch_size: ", batch_size)
 print(f'start learning rate: {learning_rate:.4e}')
 
-train_set = MatrixDataset(train_df, reduced_feature)
-val_set = MatrixDataset(val_df, reduced_feature)
+train_set = MatrixDataset(train_df, feature_collection)
+val_set = MatrixDataset(val_df, feature_collection)
 
 train_loader = torch.utils.data.DataLoader(train_set, batch_size=batch_size, shuffle=True, pin_memory=True)
 val_loader = torch.utils.data.DataLoader(val_set, batch_size=batch_size, shuffle=True, pin_memory=True)
@@ -47,9 +48,10 @@ if torch.cuda.is_available():
 model = Net(train_set.get_amount_features()).to(device)
 model.double()
 optimizer = optim.Adam(model.parameters(), lr=learning_rate)
-#scheduler = scheduler.StepLR(optimizer, step_size=5, gamma=0.9)
+# scheduler = scheduler.StepLR(optimizer, step_size=5, gamma=0.9)
 criterion = nn.BCELoss()
 print(model)
+
 
 def train():
     train_loss = []
@@ -67,14 +69,14 @@ def train():
         val_accuracy.append(running_val_accuracy)
         val_loss.append(running_val_loss)
 
-        if True or epoch % math.ceil(epochs/50) == 0:
+        if True or epoch % math.ceil(epochs / 50) == 0:
             print(f'[{epoch + 1}] train_loss: {running_train_loss:.10f}, val_loss: {running_val_loss:.10f}, '
                   f'train_accuracy: {running_train_accuracy:.2f}, val_accuracy: {running_val_accuracy:.2f}, '
                   f'train_f_one: {f_one_train:.2f}, val_f_one: {f_one_validation:.2f}, '
-                  #f'learning rate: {scheduler.get_last_lr()[0]:.4e}'
-                  )
+                # f'learning rate: {scheduler.get_last_lr()[0]:.4e}'
+            )
 
-        #scheduler.step()
+        # scheduler.step()
         early_stopping(running_val_loss, model)
         if early_stopping.early_stop:
             print("Early stopping")
@@ -159,7 +161,6 @@ def create_plot(train_loss, val_loss, train_accuracy, val_accuracy):
     axs[1].legend()
     axs[1].set_xlabel('epochs')
     axs[1].set_ylabel('accuracy')
-    # axs[1].set_ylim([0, 100])
 
     fig.tight_layout()
     plt.show()
@@ -167,7 +168,5 @@ def create_plot(train_loss, val_loss, train_accuracy, val_accuracy):
 
 
 model = train()
-model_name = '../models/model_net.pt' # f"../models/model_{int(datetime.timestamp(datetime.now()))}_{epochs}_{len(train_df)}.pt"
-torch.save(model.state_dict(), model_name)
 
 import eval
