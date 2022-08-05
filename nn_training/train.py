@@ -20,9 +20,13 @@ feature_collection = 'relative'
 batch_size = 4
 epochs = 10000
 learning_rate = 1e-4
-# torch.manual_seed(42)
-# torch.cuda.manual_seed(42)
-# np.random.seed(42)
+random_seed = 37
+
+if random_seed != None:
+    print("random_seed: ", random_seed)
+    torch.manual_seed(random_seed)
+    torch.cuda.manual_seed(random_seed + 12)
+    np.random.seed(random_seed + 53)
 early_stopping = EarlyStopping(patience=20, path=MODEL_PATH, delta=0.1)
 
 df = pd.read_csv(TRAINSET_PATH).dropna()

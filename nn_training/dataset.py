@@ -3,7 +3,13 @@ import torch
 
 
 class MatrixDataset(torch.utils.data.Dataset):
-    def __init__(self, data_df, feature_collection):
+    def __init__(self, data_df, feature_collection='relative'):
+        """
+        Args:
+            data_df (DataFrame): Dataframe with dataset.
+            feature_collection (str): 'full', 'not_sym', 'relative'
+                            Default: 'relative'
+        """
         self.data_df = data_df.dropna().replace([True], 1).replace([False], 0)
         self.feature_collection = feature_collection
 

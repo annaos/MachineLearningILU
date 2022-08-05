@@ -26,7 +26,7 @@ def main():
         compute_features = ComputeFeaturesRandom()
 
     feature_df = compute_features.get_feature_df(label_df)
-    Utils.generate_relative_features(feature_df)
+    feature_df = Utils.generate_relative_features(feature_df)
     if feature_df.size == 0:
         print("feature df is empty")
         exit()

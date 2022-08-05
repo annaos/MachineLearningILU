@@ -10,40 +10,28 @@ import os
 
 class ComputeFeatures:
 
-    def get_meta_dict(self, df):
-        exist_df = os.path.exists(data_files.DATASET_PATH)
-        if exist_df:
-            existed_df = pd.read_csv(data_files.DATASET_PATH)
-        meta_dict = dict()
-        for i in range(len(df)):
-            problem_id = df.ProblemId[i]
-            if (problem_id != problem_id.split('-')[0]):
-                matrix_id, size, split = problem_id.split('-')
-                matrix_id = int(matrix_id)
-            else:
-                matrix_id = int(problem_id)
-                size = split = None
-            if (df.conv0[i] == 0 and df.conv1[i] == 0):
-                continue
-            if (exist_df and matrix_id in existed_df.id.unique() and problem_id in existed_df.ProblemId.unique()):
-                continue
-            matrix = ssgetpy.search(matrix_id)[0]
-            file_path = matrix.download(extract=True)
-            meta_dict[problem_id] = {
-                "problem_id": problem_id,
-                "id": matrix_id,
-                "size": size,
-                "split": split,
-                "path": file_path[0] + "/" + matrix.name + ".mtx",
-                "rows": matrix.rows,
-                "cols": matrix.cols,
-                "nonzeros": matrix.nnz,
-                "posdef": matrix.isspd,
-                "nsym": matrix.nsym,
-                "psym": matrix.psym,
-            }
+    def __init__(self):
+        self.exist_df = os.path.exists(data_files.DATASET_PATH)
+        if self.exist_df:
+            self.existed_df = pd.read_csv(data_files.DATASET_PATH)
 
-        return meta_dict
+
+    def skip(self, item, matrix_id):
+        conv = item.conv0 == 0 and item.conv1 == 0
+        existed = self.exist_df \
+               and matrix_id in self.existed_df.id.unique() \
+               and item.ProblemId in self.existed_df.ProblemId.unique()
+        return conv or existed
+
+
+    def get_matrix_info(self, problem_id):
+        if (problem_id != problem_id.split('-')[0]):
+            matrix_id, size, split = problem_id.split('-')
+            matrix_id = int(matrix_id)
+        else:
+            matrix_id = int(problem_id)
+            size = split = None
+        return matrix_id, size, split
 
 
     def nnz_per_row(self, mtx):
@@ -61,6 +49,7 @@ class ComputeFeatures:
             chunksizes.extend([len(group) for group in groups])
             chunks.append(len(groups))
         return np.array(chunks), np.array(chunksizes)
+
 
     def read_matrix(self, path, size, split):
         mtx = mmread(path)
@@ -89,26 +78,53 @@ class ComputeFeatures:
         return p_sym, n_sym
 
 
+    def get_features(self, problem_id):
+        matrix_id, size, split = self.get_matrix_info(problem_id)
+        matrix = ssgetpy.search(matrix_id)[0]
+        file_path = matrix.download(extract=True)
+        path = file_path[0] + "/" + matrix.name + ".mtx"
+
+        features = {
+            "problem_id": problem_id,
+            "id": matrix_id,
+            "size": size,
+            "split": split,
+            "path": path,
+            "rows": matrix.rows,
+            "cols": matrix.cols,
+            "nonzeros": matrix.nnz,
+            "posdef": matrix.isspd,
+            "nsym": matrix.nsym,
+            "psym": matrix.psym,
+        }
+
+        mtx = self.read_matrix(path, size, split)
+        if size != None and split != None:
+            features["rows"] = mtx.shape[0]
+            features["cols"] = mtx.shape[1]
+            features["nonzeros"] = mtx.count_nonzero()
+            if matrix.nsym != 1:
+                psym, features["nsym"] = self.p_n_symmetry(mtx)
+                features["psym"] = psym
+        features.update(self.compute_common_features(mtx))
+        return features
+
+
     def get_feature_df(self, label_df):
-        feature_dict = self.get_meta_dict(label_df)
-        i = 1
-        for key, meta in feature_dict.items():
-            if i % 100 == 0:
-                print(f'reading matrix {i} {key} {meta["path"]}')
-            i += 1
+        feature_dict = dict()
 
-            mtx = self.read_matrix(meta["path"], meta["size"], meta["split"])
-            if (meta["size"] != None and meta["split"] != None):
-                feature_dict[key]["rows"] = mtx.shape[0]
-                feature_dict[key]["cols"] = mtx.shape[1]
-                feature_dict[key]["nonzeros"] = mtx.count_nonzero()
-                if meta["nsym"] != 1:
-                    psym, feature_dict[key]["nsym"] = self.p_n_symmetry(mtx)
-                    feature_dict[key]["psym"] = psym
+        for i, item in label_df.iterrows():
+            problem_id = item.ProblemId
+            if (i + 1) % 100 == 0:
+                print(f'processing matrix #{i + 1} {problem_id}')
 
-            feature_dict[key].update(self.compute_common_features(mtx))
+            matrix_id, size, split = self.get_matrix_info(problem_id)
+            if self.skip(item, matrix_id):
+                continue
+            feature_dict[problem_id] = self.get_features(problem_id)
 
         return pd.DataFrame(data=feature_dict).T
+
 
     def compute_common_features(self, mtx):
         features = dict()
@@ -126,12 +142,11 @@ class ComputeFeatures:
         features["min_row_block_size"] = np.min(chunk_sizes)
         features["max_row_block_size"] = np.max(chunk_sizes)
         features["block_count"] = np.sum(chunks)
-
         return features
+
 
     def merge(self, label_df, feature_df):
         dataset = label_df.merge(feature_df, left_on="ProblemId", right_on="problem_id")
-        if os.path.exists(data_files.DATASET_PATH):
-            existed_df = pd.read_csv(data_files.DATASET_PATH)
-            dataset = pd.concat([dataset, existed_df])
+        if self.exist_df:
+            dataset = pd.concat([dataset, self.existed_df])
         return dataset
