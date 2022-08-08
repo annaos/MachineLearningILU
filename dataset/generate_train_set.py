@@ -1,6 +1,6 @@
 import pandas as pd
 import data_files
-from utils import Utils
+from dataset.utils import Utils
 
 
 df = pd.read_csv('/home/anna/Dokumente/KIT/Thesis/MachineLearningILU/data/dataset_split.csv')

@@ -7,20 +7,21 @@ import pandas as pd
 from matplotlib import pyplot as plt
 from datetime import datetime
 import math
-from dataset import MatrixDataset
+from matrix_dataset import MatrixDataset
 from net import Net
 from early_stopping import EarlyStopping
+from evaluation import Evaluation
 
-DATA_PATH = '../data/'
+DATA_PATH = './data/'
 TRAINSET_PATH = DATA_PATH + 'train_set.csv'
 LOSS_PLOT_PATH = DATA_PATH + 'loss_plot.png'
-MODEL_PATH = '../models/model_net.pt'
+MODEL_PATH = './models/model_net.pt'
 
 feature_collection = 'relative'
-batch_size = 4
-epochs = 10000
+batch_size = 64
+epochs = 5000
 learning_rate = 1e-4
-random_seed = 37
+random_seed = 56
 
 if random_seed != None:
     print("random_seed: ", random_seed)
@@ -172,5 +173,13 @@ def create_plot(train_loss, val_loss, train_accuracy, val_accuracy):
 
 
 model = train()
-
-import eval
+ev = Evaluation(feature_collection = feature_collection)
+print('--------------------SPLIT DATASET--------------------')
+ev.eval()
+print('--------------------ORIGINAL BALANCED NEW DATASET--------------------')
+ev.eval(testset_path = './data/train_set_original_balanced_new_normalized.csv')
+print('--------------------ORIGINAL BALANCED DATASET--------------------')
+ev.eval(testset_path = './data/train_set_original_balanced.csv')
+print('--------------------ORIGINAL DATASET--------------------')
+ev.eval(testset_path = './data/train_set_original.csv')
+print('----------' + feature_collection + '----------')

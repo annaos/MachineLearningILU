@@ -4,7 +4,7 @@ from compute_features import ComputeFeatures
 from compute_features_random import ComputeFeaturesRandom
 import pandas as pd
 import data_files
-from utils import Utils
+from dataset.utils import Utils
 
 
 def main():
