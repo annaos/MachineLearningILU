@@ -1,7 +1,7 @@
 import pandas as pd
-from matrix_dataset import MatrixDataset
+from nn_training.matrix_dataset import MatrixDataset
 import torch
-from net import Net
+from nn_training.net import Net
 import numpy as np
 
 class Evaluation():

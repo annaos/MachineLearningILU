@@ -6,17 +6,20 @@ import pandas as pd
 import data_files
 from dataset.utils import Utils
 
+DATA_PATH = '../data/'
+MATRICES_PATH = DATA_PATH + 'matrices_random_split_6.csv'
+DATASET_PATH = DATA_PATH + 'dataset_split_6.csv'
 
 def main():
     args = sys.argv[1:]
     matrix_origin_type = args[0]
 
-    df = pd.read_csv(data_files.MATRICES_PATH)
+    df = pd.read_csv(MATRICES_PATH)
 
     not_conv_df = df[df.conv0.eq(0) & df.conv1.eq(0)]
     label_df = df.drop(not_conv_df.index)
     label_df = Utils.update_is_effective(label_df, factor=1.5)
-    label_df = Utils.cut_df_by_is_effective(label_df, n=2000 * 2)
+    label_df = Utils.cut_df_by_is_effective(label_df)
 
     print(f"got label df: {len(label_df)} entries")
 
@@ -35,7 +38,7 @@ def main():
     dataset = compute_features.merge(label_df, feature_df)
     print("merged dfs")
 
-    dataset.to_csv(data_files.DATASET_PATH, index=False)
+    dataset.to_csv(DATASET_PATH, index=False)
     print("saved dataset")
 
 

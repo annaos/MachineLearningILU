@@ -1,13 +1,14 @@
 import numpy as np
+import pandas as pd
 
 
 class Utils:
     @staticmethod
-    def cut_df_by_is_effective(df, n=100):
-        halb = round(n * 0.5)
+    def cut_df_by_is_effective(df, n=None):
         df1 = df[df.isEffective == 1]
         df0 = df[df.isEffective == 0]
-        halb = min(halb, len(df1), len(df0))
+        if n == None: halb = min(len(df1), len(df0))
+        else: halb = min(round(n * 0.5), len(df1), len(df0))
         print(halb)
         print("the half of set is ", halb)
         df = df1.sample(n=halb).append(df0.sample(n=halb))
@@ -31,7 +32,7 @@ class Utils:
     @staticmethod
     def normalize(df):
         df = df.dropna().replace([True], 1).replace([False], 0)
-        columns = Utils.get_features('pure') + Utils.get_features('relative')
+        columns = Utils.get_features('rows') + Utils.get_features('pure') + Utils.get_features('relative')
         for feature in columns:
             max_value = df[feature].max()
             min_value = df[feature].min()
@@ -78,3 +79,10 @@ class Utils:
         if type == 'all':
             return f + Utils.get_features('relative') + Utils.get_features('normalized') + Utils.get_features('relative_normalized')
 
+def filter_original_set(df):
+    original_df =  pd.read_csv('/home/anna/Dokumente/KIT/Thesis/MachineLearningILU/data/dataset_original.csv')
+    original_problems = original_df.ProblemId
+    a = df['id'].isin(original_problems)
+    filtered_df = df[a]
+    right_df = df.drop(filtered_df.index)
+    return right_df
