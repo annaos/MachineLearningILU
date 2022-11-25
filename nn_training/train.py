@@ -15,8 +15,9 @@ import sys
 import getopt
 
 DATA_PATH = './data/'
-TRAINSET_PATH = DATA_PATH + 'train_set.csv'
-ORIGINALSET_PATH = DATA_PATH + 'train_set_original_balanced_new_normalized.csv'
+TRAINSET_PATH = DATA_PATH + 'train_set_partial_excluding_original.csv'
+TESTSET_PATH = DATA_PATH + 'test_set_partial_excluding_original.csv'
+ORIGINALSET_PATH = DATA_PATH + 'test_set_original_balanced.csv'
 LOSS_PLOT_PATH = DATA_PATH + 'loss_plot.png'
 MODEL_PATH = './models/model_net.pt'
 
@@ -28,7 +29,7 @@ random_seed = 56
 
 
 class Train():
-    def __init__(self, proceed=False):
+    def __init__(self, proceed=False, freeze = None):
         self.epochs = epochs
 
         if random_seed != None:
@@ -39,10 +40,10 @@ class Train():
 
         self.early_stopping = EarlyStopping(patience=20, path=MODEL_PATH, delta=0.1)
 
-        df = pd.read_csv(TRAINSET_PATH).dropna()
+        df = pd.read_csv(TRAINSET_PATH)
         train_df = df.sample(frac=0.8)
         val_df = df.drop(train_df.index)
-        orig_df = pd.read_csv(ORIGINALSET_PATH).dropna()
+        orig_df = pd.read_csv(ORIGINALSET_PATH)
         print("train len: ", len(train_df))
         print("val len: ", len(val_df))
         print("batch_size: ", batch_size)
@@ -63,6 +64,14 @@ class Train():
             print("device: ", torch.cuda.get_device_name())
 
         self.model = Net(train_set.get_amount_features()).to(self.device)
+        if (freeze != None):
+            if freeze <= 0: self.model.fc0.requires_grad_(False)
+            if freeze <= 1: self.model.fc1.requires_grad_(False)
+            if freeze <= 2: self.model.fc2.requires_grad_(False)
+            if freeze <= 3: self.model.fc3.requires_grad_(False)
+            if freeze <= 4: self.model.fc4.requires_grad_(False)
+            if freeze <= 5: self.model.fc5.requires_grad_(False)
+            print(f"Freeze {freeze} layers")
         if (proceed):
             self.model.load_state_dict(torch.load(MODEL_PATH, map_location=self.device))
         self.model.double()
@@ -205,11 +214,13 @@ class Train():
 def get_args():
     argv = sys.argv
     arg_help = "{0} -f <feature_collection> -b <batch_size> -e <epochs>" \
-               " -l <learning_rate> -r <random_seed> -p (proceed) -n (no evaluation)".format(argv[0])
-    opts, args = getopt.getopt(argv[1:], "hf:b:e:l:r:pn", ["help", "feature_collection=", "batch_size=", "epochs=",
-        "learning_rate=", "random_seed=", "proceed", "no_evaluation"])
+               " -l <learning_rate> -r <random_seed> -p (proceed) -n (no evaluation)" \
+               " -g <number_of_freeze_layers>".format(argv[0])
+    opts, args = getopt.getopt(argv[1:], "hf:b:e:l:r:png:", ["help", "feature_collection=", "batch_size=", "epochs=",
+        "learning_rate=", "random_seed=", "proceed", "no_evaluation", "freeze"])
     proceed = False
     evaluation = True
+    freeze = None
     for opt, arg in opts:
         if opt in ("-h", "--help"):
             print(arg_help)
@@ -233,25 +244,27 @@ def get_args():
             proceed = True
         elif opt in ("-n", "--no_evaluation"):
             evaluation = False
-    return proceed, evaluation
+        elif opt in ("-g", "--freeze"):
+            freeze = int(arg)
+    return proceed, evaluation, freeze
 
 
 def main():
-    proceed, evaluation = get_args()
+    proceed, evaluation, freeze = get_args()
 
-    tr = Train(proceed=proceed)
+    tr = Train(proceed=proceed, freeze=freeze)
     model = tr.train()
 
     if (evaluation):
         ev = Evaluation(feature_collection = feature_collection)
         print('--------------------SPLIT DATASET--------------------')
-        ev.eval()
-        print('--------------------ORIGINAL BALANCED NEW DATASET--------------------')
-        ev.eval(testset_path = './data/train_set_original_balanced_new_normalized.csv')
+        ev.eval(testset_path = TESTSET_PATH)
+        # print('--------------------ORIGINAL BALANCED NEW DATASET--------------------')
+        # ev.eval(testset_path = './data/train_set_original_balanced_new_normalized.csv')
         print('--------------------ORIGINAL BALANCED DATASET--------------------')
-        ev.eval(testset_path = './data/train_set_original_balanced.csv')
-        print('--------------------ORIGINAL DATASET--------------------')
-        ev.eval(testset_path = './data/train_set_original.csv')
+        ev.eval(testset_path = ORIGINALSET_PATH)
+        # print('--------------------ORIGINAL DATASET--------------------')
+        # ev.eval(testset_path = './data/train_set_original.csv')
         print('----------' + feature_collection + '----------')
 
 
