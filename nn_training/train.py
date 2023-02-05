@@ -270,8 +270,8 @@ def _getWeightForHist(func):
     return func.weight.reshape(-1).detach().cpu().numpy()
 
 def createWeightPlot(model):
-    fig, axs = plt.subplots(1,  model.layers + 1, figsize=(5 * model.layers, 5))
-    for i in range(model.layers - 1):
+    fig, axs = plt.subplots(1,  model.layers, figsize=(5 * model.layers, 5))
+    for i in range(model.layers):
         axs[i].hist(_getWeightForHist(getattr(model, f'fc{i}')), label=f'fc{i}')
         axs[i].legend()
         axs[i].set_xlabel('weight')
