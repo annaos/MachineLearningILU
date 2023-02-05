@@ -7,8 +7,8 @@ import data_files
 from dataset.utils import Utils
 
 DATA_PATH = '../data/'
-MATRICES_PATH = DATA_PATH + 'matrices_random_split_6.csv'
-DATASET_PATH = DATA_PATH + 'dataset_split_6.csv'
+MATRICES_PATH = DATA_PATH + 'matrices_mini.csv'
+DATASET_PATH = DATA_PATH + 'dataset_mini.csv'
 
 def main():
     args = sys.argv[1:]
@@ -17,16 +17,16 @@ def main():
     df = pd.read_csv(MATRICES_PATH)
 
     not_conv_df = df[df.conv0.eq(0) & df.conv1.eq(0)]
-    label_df = df.drop(not_conv_df.index)
-    label_df = Utils.update_is_effective(label_df, factor=1.5)
-    label_df = Utils.cut_df_by_is_effective(label_df)
+    label_df = df.drop(not_conv_df.index).reindex()
+#    label_df = Utils.update_is_effective(label_df, factor=1.5)
+#    label_df = Utils.cut_df_by_is_effective(label_df)
 
     print(f"got label df: {len(label_df)} entries")
 
     if matrix_origin_type == 'ss':
-        compute_features = ComputeFeatures()
+        compute_features = ComputeFeatures(DATASET_PATH)
     elif matrix_origin_type == 'random':
-        compute_features = ComputeFeaturesRandom()
+        compute_features = ComputeFeaturesRandom(DATASET_PATH)
 
     feature_df = compute_features.get_feature_df(label_df)
     feature_df = Utils.generate_relative_features(feature_df)

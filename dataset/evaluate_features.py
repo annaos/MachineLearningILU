@@ -1,16 +1,11 @@
 import pandas as pd
-import data_files
 from matplotlib import pyplot as plt
 import numpy as np
+from dataset.utils import Utils
 
 
 def histogr(df_o, df_s):
-    columns = ["rows", "nonzeros", "avg_nnz", "max_nnz", "std_nnz",
-               "avg_row_block_count", "std_row_block_count", "min_row_block_count", "max_row_block_count",
-               "avg_row_block_size", "std_row_block_size", "min_row_block_size", "max_row_block_size", "block_count",
-               "density", "posdef", "psym", "nsym"
-               ]
-
+    columns = Utils.get_features_list(collection)
     fig, ax = plt.subplots(3, 6, sharey='row', figsize=(25, 13))
     i = 0
     for feature_name in columns:
@@ -42,18 +37,20 @@ def histogr1(df_o, df_s):
 
 
 def normalize(df):
-    df = df.dropna().replace([True], 1).replace([False], 0)
-    columns = ["rows", "nonzeros", "avg_nnz", "max_nnz", "std_nnz",
-               "avg_row_block_count", "std_row_block_count", "min_row_block_count", "max_row_block_count",
-               "avg_row_block_size", "std_row_block_size", "min_row_block_size", "max_row_block_size", "block_count"]
+    df = df.replace([True], 1).replace([False], 0)
+    columns = Utils.get_features_list(collection)
     for feature_name in columns:
         max_value = df[feature_name].max()
         min_value = df[feature_name].min()
         df[feature_name] = (df[feature_name] - min_value) / (max_value - min_value)
     return df
 
-df_o = pd.read_csv(data_files.DATA_PATH + 'dataset_original.csv')
-df_s = pd.read_csv(data_files.DATA_PATH + 'dataset_split.csv')
-df_s = df_s.sample(n=len(df_o), ignore_index=True)
-histogr(normalize(df_o), normalize(df_s))
-#histogr(df_o, df_s)
+collection = 'pure'
+#collection = 'relative'
+df_o = pd.read_csv('../data/oct_dataset_original.csv')
+df_o = df_o[df_o.rows < 10000]
+
+df_s = pd.read_csv('../data/train_set_2_for_eval.csv')
+#df_s = df_s.sample(n=len(df_o), ignore_index=True)
+#histogr(normalize(df_o), normalize(df_s))
+histogr(df_o, df_s)

@@ -1,15 +1,26 @@
 import numpy as np
 import pandas as pd
+from scipy.stats import zscore
 
 
 class Utils:
     @staticmethod
     def cut_df_by_is_effective(df, n=None):
-        df1 = df[df.isEffective == 1]
-        df0 = df[df.isEffective == 0]
+        df1 = df[df.is_effective == 1]
+        df0 = df[df.is_effective == 0]
         if n == None: halb = min(len(df1), len(df0))
         else: halb = min(round(n * 0.5), len(df1), len(df0))
-        print(halb)
+        print("the half of set is ", halb)
+        df = df1.sample(n=halb).append(df0.sample(n=halb))
+        df = df.sample(frac=1, ignore_index=True)
+        return df
+
+    @staticmethod
+    def cut_df_by_conv1(df, n=None):
+        df1 = df[df.is_effective == 1]
+        df0 = df[df.conv1 == 0]
+        if n == None: halb = min(len(df1), len(df0))
+        else: halb = min(round(n * 0.5), len(df1), len(df0))
         print("the half of set is ", halb)
         df = df1.sample(n=halb).append(df0.sample(n=halb))
         df = df.sample(frac=1, ignore_index=True)
@@ -17,7 +28,7 @@ class Utils:
 
     @staticmethod
     def update_is_effective(df, factor=1.5):
-        df['isEffective'] = np.where((df['conv1'] == 1) & ((df['conv0'] == 0) | (df['relation'] > factor)), 1, 0)
+        df['is_effective'] = np.where((df['conv1'] == 1) & ((df['conv0'] == 0) | (df['relation'] > factor)), 1, 0)
         return df
 
     @staticmethod
@@ -29,9 +40,17 @@ class Utils:
             df[feature + '_relative'] = a
         return df
 
+
     @staticmethod
-    def normalize(df):
-        df = df.dropna().replace([True], 1).replace([False], 0)
+    def generate_zscore_features(df):
+        columns = Utils.get_features('rows') + Utils.get_features('pure') + Utils.get_features('relative')
+        for feature in columns:
+            df[feature + '_zscore'] = (df[feature] - df[feature].mean()) / df[feature].std()
+        return df
+
+    @staticmethod
+    def generate_normalize_features(df):
+        df = df.replace([True], 1).replace([False], 0)
         columns = Utils.get_features('rows') + Utils.get_features('pure') + Utils.get_features('relative')
         for feature in columns:
             max_value = df[feature].max()
@@ -51,6 +70,8 @@ class Utils:
         f_r = list(map(lambda x: x + '_relative', f))
         f_n = list(map(lambda x: x + '_normalized', f))
         f_r_n = list(map(lambda x: x + '_relative_normalized', f))
+        f_z = list(map(lambda x: x + '_zscore', f))
+        f_r_z = list(map(lambda x: x + '_relative_zscore', f))
 
         if type == 'pure':
             return f
@@ -64,11 +85,15 @@ class Utils:
             return f_n
         if type == 'relative_normalized':
             return f_r_n
+        if type == 'zscore':
+            return f_z
+        if type == 'relative_zscore':
+            return f_r_z
 
     @staticmethod
     def get_features_list(type='all'):
         f = Utils.get_features('rows') + Utils.get_features('percent')
-        if type == 'original':
+        if type == 'pure':
             return f + Utils.get_features('pure')
         if type == 'relative':
             return f + Utils.get_features('relative')
@@ -76,12 +101,16 @@ class Utils:
             return f + Utils.get_features('normalized')
         if type == 'relative_normalized':
             return f + Utils.get_features('relative_normalized')
+        if type == 'zscore':
+            return f + Utils.get_features('zscore')
+        if type == 'relative_zscore':
+            return f + Utils.get_features('relative_zscore')
         if type == 'all':
             return f + Utils.get_features('relative') + Utils.get_features('normalized') + Utils.get_features('relative_normalized')
 
 def filter_original_set(df):
     original_df =  pd.read_csv('/home/anna/Dokumente/KIT/Thesis/MachineLearningILU/data/dataset_original.csv')
-    original_problems = original_df.ProblemId
+    original_problems = original_df.problem_id
     a = df['id'].isin(original_problems)
     filtered_df = df[a]
     right_df = df.drop(filtered_df.index)

@@ -5,27 +5,26 @@ import pandas as pd
 import numpy as np
 import more_itertools as mit
 from collections import defaultdict
-import data_files
 import os
 
 class ComputeFeatures:
 
-    def __init__(self):
-        self.exist_df = os.path.exists(data_files.DATASET_PATH)
+    def __init__(self, DATASET_PATH):
+        self.exist_df = os.path.exists(DATASET_PATH)
         if self.exist_df:
-            self.existed_df = pd.read_csv(data_files.DATASET_PATH)
+            self.existed_df = pd.read_csv(DATASET_PATH)
 
 
     def skip(self, item, matrix_id):
         conv = item.conv0 == 0 and item.conv1 == 0
         existed = self.exist_df \
                and matrix_id in self.existed_df.id.unique() \
-               and item.ProblemId in self.existed_df.ProblemId.unique()
+               and item.problem_id in self.existed_df.problem_id.unique()
         return conv or existed
 
 
     def get_matrix_info(self, problem_id):
-        if (problem_id != problem_id.split('-')[0]):
+        if (not isinstance(problem_id, int) and (problem_id != problem_id.split('-')[0])):
             matrix_id, size, split = problem_id.split('-')
             matrix_id = int(matrix_id)
         else:
@@ -56,7 +55,7 @@ class ComputeFeatures:
         if (size != None and split != None):
             start = int(split) - 1
             end = start + int(size)
-            mtx = coo_matrix(mtx.A[start:end, start:end])
+            mtx = coo_matrix(mtx.tocsr()[start:end, start:end])
         return mtx
 
 
@@ -114,7 +113,7 @@ class ComputeFeatures:
         feature_dict = dict()
 
         for i, item in label_df.iterrows():
-            problem_id = item.ProblemId
+            problem_id = item.problem_id
             if (i + 1) % 100 == 0:
                 print(f'processing matrix #{i + 1} {problem_id}')
 
@@ -146,7 +145,7 @@ class ComputeFeatures:
 
 
     def merge(self, label_df, feature_df):
-        dataset = label_df.merge(feature_df, left_on="ProblemId", right_on="problem_id")
+        dataset = label_df.merge(feature_df, on="problem_id")
         if self.exist_df:
             dataset = pd.concat([dataset, self.existed_df])
         return dataset
