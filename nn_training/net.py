@@ -4,42 +4,43 @@ import torch.nn.functional as F
 
 
 class Net(nn.Module):
-    def __init__(self, amount_features):
+    def __init__(self, amount_features, layers = 6, neurons = 16):
         super().__init__()
-        self.fc0 = nn.Linear(amount_features, 16)
-        self.fc1 = nn.Linear(16, 16)
-        self.fc2 = nn.Linear(16, 16)
-        self.fc3 = nn.Linear(16, 16)
-        self.fc4 = nn.Linear(16, 16)
-        self.fc5 = nn.Linear(16, 1)
+        self.layers = layers
+        # self.fc0 = nn.Linear(amount_features, 16)
+        # self.fc1 = nn.Linear(16, 16)
+        # self.fc2 = nn.Linear(16, 16)
+        # self.fc3 = nn.Linear(16, 16)
+        # self.fc4 = nn.Linear(16, 16)
+        # self.fc5 = nn.Linear(16, 16)
+        # self.fc6 = nn.Linear(16, 16)
+        # self.fc7 = nn.Linear(16, 1)
 
-        self.dropout = nn.Dropout(p=0.05)
-        self.activation = nn.LeakyReLU()
+        for i in range(self.layers):
+            fc = f'fc{i}'
+            if i == 0:
+                setattr(self, fc, nn.Linear(amount_features, neurons))
+            elif i == layers - 1:
+                setattr(self, fc, nn.Linear(neurons, 1))
+            else:
+                setattr(self, fc, nn.Linear(neurons, neurons))
+
+            dropout = f'dropout{i}'
+            setattr(self, dropout, nn.Dropout(p=0.05))
+
+            activation = f'activation{i}'
+            setattr(self, activation, nn.LeakyReLU())
+
         self.sigmoid = nn.Sigmoid()
 
 
     def forward(self, x):
-        input = x
-        x = self.fc0(x)
-        x = self.dropout(x)
-        x = self.activation(x)
+        for i in range(self.layers - 1):
+            x = getattr(self, f'fc{i}')(x)
+            x = getattr(self, f'dropout{i}')(x)
+            x = getattr(self, f'activation{i}')(x)
 
-        x = self.fc1(x)
-        x = self.dropout(x)
-        x = self.activation(x)
-
-        x = self.fc2(x)
-        x = self.dropout(x)
-        x = self.activation(x)
-
-        x = self.fc3(x)
-        x = self.dropout(x)
-        x = self.activation(x)
-
-        x = self.fc4(x)
-        x = self.dropout(x)
-        x = self.activation(x)
-
-        x = self.fc5(x)
+        i += 1
+        x = getattr(self, f'fc{i}')(x)
         x = self.sigmoid(x)
         return x

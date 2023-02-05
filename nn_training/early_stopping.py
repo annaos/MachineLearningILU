@@ -12,7 +12,7 @@ class EarlyStopping:
                             Default: 7
             verbose (bool): If True, prints a message for each validation loss improvement.
                             Default: False
-            delta (float): Minimum change in the monitored quantity to qualify as an improvement.
+            delta (float): Minimum relative change in the monitored quantity to qualify as an improvement.
                             Default: 0
             path (str): Path for the checkpoint to be saved to.
                             Default: 'checkpoint.pt'

@@ -3,13 +3,16 @@ from nn_training.matrix_dataset import MatrixDataset
 import torch
 from nn_training.net import Net
 import numpy as np
+import logging
 
 class Evaluation():
-    def __init__(self, feature_collection = 'relative', model_path = './models/model_net.pt'):
+    def __init__(self, feature_collection, layers, neurons, model_path = './models/model_net.pt'):
+        self.logger = logging.getLogger(__name__)
         self.feature_collection = feature_collection
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-        self.model = Net(MatrixDataset.get_amount_features_for_collection(feature_collection)).to(self.device).double()
+        amount_features = MatrixDataset.get_amount_features_for_collection(feature_collection)
+        self.model = Net(amount_features, layers, neurons).to(self.device).double()
         self.model.load_state_dict(torch.load(model_path, map_location=self.device))
         self.model.eval()
 
@@ -39,28 +42,28 @@ class Evaluation():
             precision, recall, f_one = 0, 0, 0
 
         confusion_matrix = [[true_positives, false_negatives], [false_positives, true_negatives]]
-        print('Test set: ', len(truth_labels))
-        print('Label effective: ', label_effective)
-        print('Predicted effective: ', prediction_effective)
-        print('Errors: ', false_negatives + false_positives)
-        print(f'Confusion matrix: $\\begin{{array}}{{rrr}} {true_positives} & {false_negatives} \\\\ {false_positives} & {true_negatives} \\\\ \\end{{array}}$')
-        print(np.matrix(confusion_matrix))
+        self.logger.info('Test set: %d', len(truth_labels))
+        self.logger.info('Label effective: %d', label_effective)
+        self.logger.info('Predicted effective: %d', prediction_effective)
+        self.logger.info('Errors: %d', false_negatives + false_positives)
+        self.logger.info(f'Confusion matrix: $\\begin{{array}}{{rrr}} {true_positives} & {false_negatives} \\\\ {false_positives} & {true_negatives} \\\\ \\end{{array}}$')
+        self.logger.info(np.matrix(confusion_matrix))
 
-        print('Error, where predicted effective (false positive): ', false_positives)
-        print('Error, where label effective (false negative): ', false_negatives)
-        print('Accuracy: ', accuracy)
-        print('Precision: ', precision)
-        print('Recall: ', recall)
-        print('F_one: ', f_one)
+        self.logger.info('Error, where predicted effective (false positive): %d', false_positives)
+        self.logger.info('Error, where label effective (false negative): %d', false_negatives)
+        self.logger.info('Accuracy: %f', accuracy)
+        self.logger.info('Precision: %f', precision)
+        self.logger.info('Recall: %f', recall)
+        self.logger.info('F_one: %f', f_one)
 
 
     def __print_results(self, val_loader):
         for i, data in enumerate(val_loader, 0):
             features, labels = data
-            print('GroundTruth: ', ' '.join(f'{int(labels[j])}' for j in range(len(labels))))
+            self.logger.info('GroundTruth: %s', ' '.join(f'{int(labels[j])}' for j in range(len(labels))))
 
             predicted = torch.squeeze(self.model(features.to(self.device)).round().to(torch.int))
-            print('Predicted  : ', ' '.join(f'{predicted[j]}' for j in range(len(predicted))))
+            self.logger.info('Predicted  : %s', ' '.join(f'{predicted[j]}' for j in range(len(predicted))))
 
 
     def eval(self, testset_path = './data/test_set.csv', print_results = False):

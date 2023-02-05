@@ -8,10 +8,10 @@ class MatrixDataset(torch.utils.data.Dataset):
         """
         Args:
             data_df (DataFrame): Dataframe with dataset.
-            feature_collection (str): 'original', 'relative', 'normalized', 'relative_normalized', 'all'
+            feature_collection (str): 'pure', 'relative', 'normalized', 'relative_normalized', 'all'
                             Default: 'relative'
         """
-        self.data_df = data_df.dropna().replace([True], 1).replace([False], 0)
+        self.data_df = data_df.replace([True], 1).replace([False], 0)
         self.feature_collection = feature_collection
 
     def __len__(self):
@@ -19,11 +19,11 @@ class MatrixDataset(torch.utils.data.Dataset):
 
     def __getitem__(self, index):
         features = self.data_df.iloc[index]
-        isEffective = features.isEffective
+        is_effective = features.is_effective
 
         feature_list = Utils.get_features_list(self.feature_collection)
         f = np.array(features.get(feature_list)).astype('float64')
-        return f, isEffective
+        return f, is_effective
 
     @staticmethod
     def get_amount_features_for_collection(feature_collection):
