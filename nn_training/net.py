@@ -20,7 +20,7 @@ class Net(nn.Module):
             fc = f'fc{i}'
             if i == 0:
                 setattr(self, fc, nn.Linear(amount_features, neurons))
-            elif i == layers - 1:
+            elif i == self.layers - 1:
                 setattr(self, fc, nn.Linear(neurons, 1))
             else:
                 setattr(self, fc, nn.Linear(neurons, neurons))

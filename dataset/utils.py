@@ -55,8 +55,16 @@ class Utils:
         for feature in columns:
             max_value = df[feature].max()
             min_value = df[feature].min()
-            if (max_value != min_value):
+            std = df[feature].std()
+            if max_value != min_value:
                 df[feature + '_normalized'] = (df[feature] - min_value) / (max_value - min_value)
+            else:
+                df[feature + '_normalized'] = df[feature]
+
+            if std != 0:
+                df[feature + '_zscore'] = (df[feature] - df[feature].mean()) / std
+            else:
+                df[feature + '_zscore'] = df[feature]
         return df
 
     @staticmethod

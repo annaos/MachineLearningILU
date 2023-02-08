@@ -238,10 +238,10 @@ def get_args():
             feature_collection = arg
         elif opt in ("-l", "--layers"):
             global layers
-            layers = arg
+            layers = int(arg)
         elif opt in ("-n", "--neurons"):
             global neurons
-            neurons = arg
+            neurons = int(arg)
         elif opt in ("-b", "--batch_size"):
             global batch_size
             batch_size = int(arg)
